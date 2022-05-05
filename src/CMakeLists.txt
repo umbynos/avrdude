@@ -50,12 +50,12 @@ endif()
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
 add_compile_definitions(CONFIG_DIR=\"${CONFIG_DIR}\")
 
-if(WIN32)
+if(MINGW)
     set(EXTRA_WINDOWS_SOURCES "${PROJECT_BINARY_DIR}/src/windows.rc")
     set(EXTRA_WINDOWS_LIBRARIES setupapi ws2_32)
 endif()
 
-if(NOT WIN32)
+if(NOT MINGW)
     set(LIB_MATH m)
     add_compile_options(-Wall) # -Wextra
 endif()
@@ -102,7 +102,7 @@ file(WRITE "${PROJECT_BINARY_DIR}/avrdude.conf.in" "${conf_file}")
 configure_file(cmake_config.h.in ac_cfg.h)
 configure_file("${PROJECT_BINARY_DIR}/avrdude.conf.in" avrdude.conf)
 configure_file(avrdude.spec.in avrdude.spec)
-if(WIN32)
+if(MINGW)
     configure_file(windows.rc.in windows.rc)
 endif()
 
