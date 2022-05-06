@@ -30,6 +30,7 @@ jobs:
             arch: amd64
             cross_compile: x86_64-apple-darwin13
             cross_compiler: o64-clang
+            cross_compiler-ar: /opt/osxcross/target/bin/x86_64-apple-darwin13-ar # we have to manually specify the full path otherwise it's not found for some reason 
           - os: windows
             arch: 386
             cross_compile: i686-w64-mingw32
@@ -48,7 +49,8 @@ jobs:
     - name: Build Avrdude
       run: |
         if [ "${{ matrix.config.os }}" = "darwin" ]; then
-          cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compiler }}++ -DCMAKE_C_FLAGS="-I/opt/lib/${{ matrix.config.cross_compile }}/include/libusb-1.0/ -I/opt/lib/${{ matrix.config.cross_compile }}/include -pthread -DHAVE_USB_H" -DCMAKE_PREFIX_PATH=/opt/lib/${{ matrix.config.cross_compile }}/ -DHAVE_LIBFTDI="NO" -B build/
+          # For darwin we disable the static flags (not supported by clang) and we override the archive tool used 
+          cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compiler }}++ -DCMAKE_AR=${{ matrix.config.cross_compiler-ar }} -DCMAKE_C_FLAGS="-I/opt/lib/${{ matrix.config.cross_compile }}/include/libusb-1.0/ -I/opt/lib/${{ matrix.config.cross_compile }}/include -pthread -DHAVE_USB_H" -DCMAKE_PREFIX_PATH=/opt/lib/${{ matrix.config.cross_compile }}/ -DHAVE_LIBFTDI="NO" -B build/
         else
           cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compile }}-gcc -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compile }}-g++ -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" -DCMAKE_C_FLAGS="-I/opt/lib/${{ matrix.config.cross_compile }}/include/libusb-1.0/ -I/opt/lib/${{ matrix.config.cross_compile }}/include -pthread" -DCMAKE_PREFIX_PATH=/opt/lib/${{ matrix.config.cross_compile }}/ -DHAVE_LIBFTDI="NO" -B build/
         fi
