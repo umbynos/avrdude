@@ -11,6 +11,7 @@ jobs:
     runs-on:
       ubuntu-latest
     strategy:
+      fail-fast: false #here only for debug
       matrix:
         config:
           - os: linux
@@ -47,9 +48,9 @@ jobs:
     - name: Build Avrdude
       run: |
         if [ "${{ matrix.config.os }}" = "darwin" ]; then
-          cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compiler }}++ -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" -DCMAKE_C_FLAGS="-I/opt/lib/$CROSS_COMPILE/include/libusb-1.0/ -I/opt/lib/$CROSS_COMPILE/include -pthread" -DCMAKE_PREFIX_PATH=/opt/lib/$CROSS_COMPILE/ -DHAVE_LIBFTDI="NO" -B build/
+          cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compiler }}++ -DCMAKE_C_FLAGS="-I/opt/lib/${{ matrix.config.cross_compile }}/include/libusb-1.0/ -I/opt/lib/${{ matrix.config.cross_compile }}/include -pthread -DHAVE_USB_H" -DCMAKE_PREFIX_PATH=/opt/lib/${{ matrix.config.cross_compile }}/ -DHAVE_LIBFTDI="NO" -B build/
         else
-          cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compile }}-gcc -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compile }}-g++ -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" -DCMAKE_C_FLAGS="-I/opt/lib/$CROSS_COMPILE/include/libusb-1.0/ -I/opt/lib/$CROSS_COMPILE/include -pthread" -DCMAKE_PREFIX_PATH=/opt/lib/$CROSS_COMPILE/ -DHAVE_LIBFTDI="NO" -B build/
+          cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compile }}-gcc -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compile }}-g++ -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" -DCMAKE_C_FLAGS="-I/opt/lib/${{ matrix.config.cross_compile }}/include/libusb-1.0/ -I/opt/lib/${{ matrix.config.cross_compile }}/include -pthread" -DCMAKE_PREFIX_PATH=/opt/lib/${{ matrix.config.cross_compile }}/ -DHAVE_LIBFTDI="NO" -B build/
         fi
         cmake --build build/ -v
 
