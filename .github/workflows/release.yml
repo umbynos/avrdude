@@ -30,7 +30,8 @@ jobs:
             arch: amd64
             cross_compile: x86_64-apple-darwin13
             cross_compiler: o64-clang
-            cross_compiler-ar: /opt/osxcross/target/bin/x86_64-apple-darwin13-ar # we have to manually specify the full path otherwise it's not found for some reason 
+            ar: /opt/osxcross/target/bin/x86_64-apple-darwin13-ar # we have to manually specify the full path otherwise it's not found for some reason
+            ld: /opt/osxcross/target/bin/x86_64-apple-darwin13-ld
           - os: windows
             arch: 386
             cross_compile: i686-w64-mingw32
@@ -46,11 +47,18 @@ jobs:
     - name: Checkout avrdude repository
       uses: actions/checkout@v2
 
+    - name: replace system ranlib with darwin one
+      # for some reason is not possible to override ranlib with env vars, so this is ugly but it's the only way I found
+      if: matrix.config.os == 'darwin'
+      run: |
+        mv /usr/bin/ranlib /usr/bin/ranlib.bk
+        ln -s /opt/osxcross/target/bin/${{ matrix.config.cross_compile }}-ranlib /usr/bin/ranlib
+
     - name: Build Avrdude
       run: |
         if [ "${{ matrix.config.os }}" = "darwin" ]; then
-          # For darwin we disable the static flags (not supported by clang) and we override the archive tool used 
-          cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compiler }}++ -DCMAKE_AR=${{ matrix.config.cross_compiler-ar }} -DCMAKE_C_FLAGS="-I/opt/lib/${{ matrix.config.cross_compile }}/include/libusb-1.0/ -I/opt/lib/${{ matrix.config.cross_compile }}/include -pthread -DHAVE_USB_H" -DCMAKE_PREFIX_PATH=/opt/lib/${{ matrix.config.cross_compile }}/ -DHAVE_LIBFTDI="NO" -B build/
+          # For darwin we disable the static flags (not supported by clang) and we make some adjustments
+          cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compiler }}++ -DCMAKE_AR=${{ matrix.config.ar }} -DCMAKE_LINKER=${{ matrix.config.ld}} -DCMAKE_EXE_LINKER_FLAGS="-L/opt/lib/${{ matrix.config.cross_compile }}/lib/" -DCMAKE_C_FLAGS="-I/opt/lib/${{ matrix.config.cross_compile }}/include -pthread -framework Foundation -framework IOKit -framework Cocoa -DHAVE_USB_H" -DCMAKE_PREFIX_PATH=/opt/lib/${{ matrix.config.cross_compile }}/ -DHAVE_LIBFTDI="NO" -B build/
         else
           cmake -DCMAKE_C_COMPILER=${{ matrix.config.cross_compile }}-gcc -DCMAKE_CXX_COMPILER=${{ matrix.config.cross_compile }}-g++ -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" -DCMAKE_C_FLAGS="-I/opt/lib/${{ matrix.config.cross_compile }}/include/libusb-1.0/ -I/opt/lib/${{ matrix.config.cross_compile }}/include -pthread" -DCMAKE_PREFIX_PATH=/opt/lib/${{ matrix.config.cross_compile }}/ -DHAVE_LIBFTDI="NO" -B build/
         fi
